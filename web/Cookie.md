@@ -35,3 +35,12 @@ Cookie 등장배경
 	- `Secure`가 설정된 Cookie 를 가진 브라우저는 https 프로토콜 상에서만 서버로 Cookie 를 전달한다.
 - `Set-Cookie: <쿠키 이름>=<쿠키 값>; HttpOnly`
   - `HttpOnly` 가 설정된 Cookie 는 js 상에서 Cookie 에 직접 접근하는 것을 방지한다. (`Document.cookie`)
+
+
+
+
+---
+
+### ref
+- https://www.daleseo.com/http-cookies/
+- https://www.daleseo.com/http-session/
