@@ -5,7 +5,7 @@
 Cookie 와 다른 점
 - Cookie와 달리 매 요청에 값을 포함하지 않는다.
 - Cookie 보다 큰 용량의 데이터를 저장 할 수 있다. (최소 2mb 이상, up to 5mb?)
-  - Cookie 의 경우 최대 70개, Cookie 당 4,097 bytes 로 제한된다.
+  - Cookie 의 경우 최대 70개, Cookie 당 4,096 bytes 로 제한된다.
 - Cookie 는 요청 헤더를 조작해서 서버로 전달되는 Cookie 값을 변조할 수 있지만 LocalStorage, SessionStorage 는 불가능하다.
 
 
