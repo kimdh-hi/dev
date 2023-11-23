@@ -1,0 +1,17 @@
+커버링 인덱스
+- select, where, group by, order by 에 사용된 모든 컬럼에 인덱스가 사용되는 경우이다.
+- 실행계획 상 `extra` 가 `using index` 이 경우 커버링 인덱스가 사용된 것으로 판단 할 수 있다.
+- 커버링 인덱스의 가장 큰 특징은 실제 데이터 접근을 하지 않는다는 것이다.
+  - non-clustered key 의 경우 각 노드의 리프노드는 실제 값을 갖고 있기 때문이다. (clustered-key 값과 함께 두 개 값을 가지고 있음)
+
+```
+where 절에 index 가 적용된 컬럼만이 사용된다고 해도 select 절에서 그 외 컬럼이 사용된다면 실제 데이터 테이블에 접근이 필요하다.
+커버링 인덱스라면 실제 데이터 테이블에 접근하지 않고 non-clustured 노드의 값을 그대로 사용할 수 있다.
+
+ 
+```
+
+
+### reference
+- https://tecoble.techcourse.co.kr/post/2021-10-12-covering-index/
+- https://jojoldu.tistory.com/476
