@@ -24,3 +24,7 @@ class DummyPrinter: Printer {
   }
 }
 ```
+
+--- 
+
+https://tecoble.techcourse.co.kr/post/2020-09-19-what-is-test-double/
