@@ -1,0 +1,82 @@
+# deployment.yml
+
+## strategy (배포방식)
+
+1. type: RollingUpdate (기본값)
+    1. maxUnavailable: RollingUpdate 시 동시에 내릴 수 있는 파드 수 또는 비율
+        1. 낮게 설정할수록 배포속도는 느리지만 안전하게 한 개, 한 개씩 pod 를 교체
+        2. default: 25% (소수점 내림으로 처리)
+    2. maxSurge: 초과 생성 허용수 (replicas 초과해서 생성)
+        1. maxSurge 만큼 새 pod 를 올리고 기존 pod 를 내린다.
+        2. maxUnavailable 를 0으로 설정하는 경우 maxSurge 로 배포
+        3. default: 25% (소수점 올림으로 처리)
+
+## resources
+
+1. pod 를 어떤 node 에 올릴지 결정시 사용되는 값
+
+> 이 pod 는 2core/4gi 의 메모리의 노드에 올려
+> 
+1. requests 영역에 할당된 cpu/메모리 만큼의 여유 공간이 있는 node 에만 배치 가능
+    1. 실제 해당 컨테이너가 사용하는 cpu/메모리와는 상관없이 node 에서는 request 만큼의 공간을 차지함
+2. requests == limits (Guaranteed)
+    1. OOM 방지 위함
+    2. requests 를 limits 보다 적게 설정하는 경우 노드에 더 많은 pod 배치 가능하지만 트래픽 폭주시 limits 까지 치고 올라가는 경우 OOMKill 발생 가능
+
+## probe
+
+1. startupProbe → readinessProbe + livenessProbe
+2. startupProbe
+    1. JVM 웜업, 대용량 초기 데이터 로딩 등 허용 최대 시간
+    2. failureThreshold: 20, periodSeconds: 10 ⇒ 최대 200초 간 컨테이너 구동 허용
+3. readinessProbe
+    1. 트래픽 받을 준비가 됐는지 확인
+    2. 실패시 해당 service 엔드포인트에서 제외되어 트래픽 수신 대상에서 제외 (ready → not ready)
+    3. 실패 이후 성공시 트래픽 대상에 포함 (not ready → ready)
+4. livenessProbe
+    1. 서버가 살아있는지 확인
+    2. 실패시 컨테이너 재시작
+5. probe 설정 방식
+    1. httpGet, exec, tcpSocket
+6. 주요 파라미터
+    1. initialDelaySeconds
+        1. 컨테이너 시작 후 probe 시작 전까지의 대기시간
+        2. startupProbe 가 별도고 있다면 0으로 설정
+    2. periodSeconds
+        1. probe 실행주기(seconds)
+        2. default: 10s
+    3. failureThreshold
+        1. 연속 실패 허용 횟수
+        2. default: 3
+    4. timeoutSeconds
+
+## affinity
+
+1. nodeAffinity
+    1. requiredDuringScheduling
+        1. 조건 불만족시 pod pending (노드에 배치 안 함)
+        2. ex) 특정 노드 풀에만 배치
+    2. preferredDuringScheduling
+        1. 가능하면 조건에 부합하는 노드에 pod qocl
+2. podAntiAffinity
+    1. 같은 레이블의 파드가 서로 다른 노드에 분산되로록 설정
+
+```yaml
+동일 label pod 동일 node 배치 방지
+
+template:
+  metadata:
+    labels:
+      app: label-name
+  spec:
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - label-name
+```
