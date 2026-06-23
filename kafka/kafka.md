@@ -1,5 +1,63 @@
 # Kafka
 
+# Kafka Broker
+
+- kafka 서버 인스턴스를 의미
+- 여러 broker 가 cluster 를 구성
+- 여러 broker 는 로드밸런싱, HA 제공
+- 각 broker 는 고유 id 를 가지며, 클라이언트는 어떤 broker 에 연결하더라도 전체 클러스터의 메타데이터 통해 전체 broker 에 접근(식별) 가능
+- replication factor (하나의 파티션을 몇 개 브로커에 복제할지) 의 권장값이 3이므로 broker 의 수도 초기 3개를 권장
+
+## Broker 기능
+
+### partition replica
+
+- partition 마다 하나의 Leader broker 가 읽기 쓰기를 담당
+- HA 위해 Follower Broker가 Leader Broker의 메시지를 복제(Fetch)하여 저장
+
+### 메세지 저장
+
+- 메세지 저장단위: segment (.log)
+- 하나의 segment 에는 연속된 offset 의 메세지들이 저장된다.
+    - segment 의 파일명은 시작 offset 값으로 지정됨
+- 각 segment 마다 .index 파일 생성
+    - [offset, segment 내 시작 bytes] 구조
+    - offset 에 따라 해당 segment 내 n bytes 부터 읽도록 하여 조회 성능 향상
+- segment 별 .timeindex 통해 시간 기반 검색도 지원
+
+## Cluter 운영 모드
+
+- ZooKeeper
+- KRaft
+
+### ZooKeeper
+
+- ~ 3.x (lagacy)
+- Controller Broker 가 클러스터 당 한 개 씩 존재하여 ZooKeeper (ZooKeeper 앙상블) 과 통신
+    - 선출된 controller broker 가 kafka cluster 전체 상태를 관리
+- controllerbroker 장애시 zookeeper 가 감지하여 후처리
+    - controller broker 장애시: 새 controller broker 선출
+    - 일반 broker 장애는 controller broker 가 감지하여 rebalancing 수행
+- ZooKeeper 도 리더/팔로워로 구성
+    - HA 제공
+    - 메타데이터 쓰기, controller broker 선출 등에 과반수 동의 필요(Quorum) 하므로 홀수 권장 (짝수여도 quorum 동작은 함. 단, 짝수-1 개와 동일함)
+- 메타데이터가 Zookeeper, broker 에 분산되어 있어서 동기화 이슈 발생 가능
+
+### KRaft (Kafka Raft Metadata)
+
+- kafka 2.8 preview 도입, 3.3 부터 권장, 4.0부터 유일 모드
+- Raft 합의 알고리즘 내장하여 ZooKeeper 와 같은 별도 시스템 없이 동작
+- `__cluster_metadata` 내부 토픽에 모든 메타데이터를 로그 형태로 저장
+- controller 의 개념을 broker 로부터 분리
+    - combined 모드 사용하면 broker 가 controller 겸용 가능
+    - 단, 운영 환경에서는 combined 모드가 아닌 별도 controller (isolated) 권장
+- controller 의 역할은 zookeeper 앙상블의 각 역할과 유사
+    - 메타데이터 저장
+    - Raft 프로토콜 통한 active/standby 선출
+- 각 Broker는 쿼럼에 참여하지 않고 메타데이터를 fetch해서 캐싱만 함
+
+---
+
 ## Bootstrap
 
 - producer/consumer 가 topic 으로 메세지 발행 위해 리더 브로커 정보를 얻는 과정
