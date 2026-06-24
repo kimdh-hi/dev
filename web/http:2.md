@@ -99,6 +99,16 @@ conn1: style.css ──►
 ==> 대부분의 리버스 프록시에서는 코드 한 줄로 http/2 설정이 가능함. 손해보단 이득이 더 크므로 웬만하면 설정하는게 좋을 듯 함
 ==> 단, 전송(TCP) 계층 HOL blocking 가 우려되는 네트워크 상태가 우려되는 망이라면 HTTP/2 적용 재고
 
+## h2c (HTTP/2 clearText)
+
+- 평문으로 TCP 위에서 동작
+- 브라우저는 지원하지 않음 (따라서 브라우저는 HTTP/2 사용시 TLS 강제)
+- 주로 내부망에서 서버간 통신시 사용 
+  - gRPC 는 HTTP/2(h2) 기반이므로 TLS/mTLS 사용하지 않는 경우 h2c 로 통신
+- 연결수립 방식 
+  - upgrade(switching protocol) 방식: websocket 과 유사하게 101 switching protocol 통해 연결 수립
+  - prior knowledge 방식: 서버가 h2c 를 지원하는 것을 알 수 있는 경우 upgrade 없이 h2c 로 연결 수립 (use Connection Preface)
+
 ---
 
 - https://www.cloudflare.com/ko-kr/learning/performance/http2-vs-http1.1/
