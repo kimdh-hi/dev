@@ -35,7 +35,16 @@
 - X-Forwarded-For 헤더 통해 소스 IP 보존
 - AWS ALB, HAProxy, NGINX, Envoy..
 
-## AWS NLB (L4, Network Load Balancer)
+## AWS ELB (ALB, NLB)
+- AWS ELB (Elastic LoadBalancer)
+- target group, listener, Rules 등의 구성요소를 가짐
+- managed 서비스로써 트래픽 기준으로 LB 노드 오토스케일링
+- ELB 는 여러 AZ(Availability Zone, 가용역역)에 걸쳐 배포됨
+  - AZ: 리전 내 독립된 물리적 데이터센터 그룹
+  - 여러 AZ 에 거쳐 분산되므로 LB 단일장애지점 이슈 최소화
+- NLB(L4), ALB(L7), GWLB(L3) 등이 대표적인 ELB 타입
+
+### AWS NLB (L4, Network Load Balancer)
 - AWS L4 LB
 - connection 단위 처리, IP 기반 세션 고정 등 일반 L4 LB 와 동일한 기능 제공
 - TLS 처리
@@ -44,10 +53,29 @@
   - L7 LB 가 따로 없는 경우 백엔드 서버에 직접 TLS 관련 부하를 가하지 않기 위함
   - 인증서 관리 중앙화 위함 => ACM (AWS Certificate Manager)
 
-## AWS ALB (L7, Application Load Balancer)
+### AWS ALB (L7, Application Load Balancer)
 - AWS L7 LB
 - L7 LB 기본 기능 동일하게 제공.
   - 요청 단위 처리, 내용 기반 라우팅, TLS 처리, 쿠키 기반 세션 고정
+
+## L4/L7 선택
+- L7 LB 는  L4 LB 의 완전한 상위집합이 아니다.
+- 각각 특징이 있으므로 요구사항에 맞게 선택해야 함.
+- L4 선택 기준
+  - HTTP/HTTPS/gRPC 프로토콜이 아닌 경우
+  - 디테일한 라우팅룰 적용이 필요없는 반면 극한의 처리량을 요구하는 경우
+    - L4 LB 는 메세지 파싱/복호화 등이 없으므로 처리량 측면에서 우위
+  - 원본 클라이언트 IP 를 X-Forwarded-For 가 아닌 TCP 커넥션 자체에서 획득해야 하는 경우
+  - 고정 IP 가 필요한 경우
+    - L7 ALB 의 경우 고정 IP 가 아님.
+    - L4 NLB 는 서브넷(AZ) 마다 고정 IP 부여 (필요시 Elastic IP 직접 설정 가능)
+      - 우리 서버로 인바운드 요청을 보내는 타서버에서 우리 서버 IP 를 화이트리스트로 관리하고 싶은 경우 고정된 IP 를 필요로 함. 
+  - TLS 를 BE 까지 그대로 넘겨야 하는 경우 (tls passthrough)
+    - L7 은 콘텐츠 기반 라우팅이므로 tls 복호화 수행하므로 mTLS 등 클라이언트의 신원 파악 위해 BE 로 tls 그대로 넘기지 못함.
+    - 단, SNI 기반 1라우팅만 필요로 하는 경우 L7 에서도 passthrough 가능 (HAProxy mode tcp-SNI 검사, Nginx stream-sslpreread)
+- 일반적으로 api 등 백엔드 서버 앞 단에는 L7 LB 를 배치
+- 만약 고정 IP/tls passthrough, 경로/헤더 등 콘텐츠 기반 라우팅 가 동시에 필요한 경우 L4/L7 모두 사용도 가능
+
 
 ## reference
 
