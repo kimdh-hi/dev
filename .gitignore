@@ -37,3 +37,4 @@ node_modules/
 
 # Local tooling
 .omc/
+.claude
