@@ -96,6 +96,18 @@ sentinel failover-timeout mymaster 60000
 sentinel parallel-syncs mymaster 1
 ```
 
+- sentinel 설정시에는 마스터 정보만을 포함
+    - redis replication 시 각 replica 에 마스터 정보가 설정되므로  master-replica 모두 서로 정보를 알 수 있음
+    - 각 sentinel 프로세스는 마스터 정보를 알고 있으므로 마스터를 통해 replica 와 각 sentinel 정보를 획득
+- sentinel 구성시 최소 3개 sentinel 프로세스를 필요로 함
+    - redis 서버가 3대일 경우 → 각 서버마다 redis, sentinel 프로세스 배치
+    - redis 서버가 2대일 경우 → 각 서버마다 redis, sentinel 프로세스 배치 후 다른 독립 서버에 sentinel 추가 배치
+        - 별도 독립 서버일 필요는 없고 was, db, 모니터링서버 등에 배치해도 됨
+        - 단, 해당 서버 오토스케일링 여부 확인 필요
+        - sentinel 은 한 번 인식된 sentinel 프로세스를 잊지 않음
+        - sentinel 설치된 서버가 늘어났다가 줄어드는 경우 과반수 등에서 처리 등에서 이슈될 수 있음
+        - 오토스케일시 sentinel 설치가 되지 않도록 조치를 하든, 오토스케일 대상 서버가 아닌 곳에 배치
+
 ## springboot 기준 client 설정
 
 - sentinel 정보를 입력하고, 부트스트랩 과정을 통해 sentinel 로 부터 master 정보(6379) 얻어와서 연결
@@ -132,5 +144,3 @@ fun lettuceReadFromCustomizer() = LettuceClientConfigurationBuilderCustomizer { 
 
 - https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/
 - https://redis.io/tutorials/operate/redis-at-scale/high-availability/
-- https://docs.spring.io/spring-data/redis/reference/redis/connection-modes.html#redis:sentinel
-- claude
