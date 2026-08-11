@@ -81,3 +81,22 @@ runners
     - 각 job 을 별도 docker container 상에서 실행하는 방식
         - 격리단위가 파이프라인 단위가 아닌 job 단위임
     - container 특성을 그대로 가지므로 job 간에 커널 수준은 공유
+
+### gitlab runner docker executor 사용시 주의
+- docker executor 는 job 을 컨테이너 내에서 실행
+- 해당 컨테이너는 격리되어 호스트 소켓 파일을 볼 수 없음
+- job 내에서 도커 데몬 사용을 위해 호스트 docker socket 마운트 (소켓 바인딩)
+- 소켓 바인딩 시 컨테이너 격리를 통한 보안 메커니즘이 무력화되므로 해당 job에서는 최소한의 작업만 진행할 것.
+  - 서버 테스트, 빌드 등 각종 의존성과 코드를 필요로하는 작업은 docker socket 과는 무관하므로 해당 job 은 소켓 바인딩 없는 gitlab runner 사용
+  - 실제 이미지 빌드, image container 푸시 등은 docker socket 필요하므로 제한적으로 소켓 바인딩있는 gitlab runner 에 job 할당
+
+### 컨테이너 내 도커 데몬이 없는 경우 docker cli 동작 불가 해결방안
+- 호스트 소켓 마운트 (Dood, Docker-out-of-Docker)
+  - 호스트 /var/run/docker.sock 마운트
+  - 호스트 도커 데몬을 사용하므로 보안이슈 점검 필요
+- DinD (docker in docker)
+  - 내부에 dockerd 를 포함하는 dind 컨테이너를 별도로 띄움 (docker in docker)
+  - job 컨테이너는 네트워크 통해 dind 컨테이너에 접속해서 docker 명령어 실행
+  - `--privileged` 필수,
+
+https://docs.gitlab.com/ci/docker/using_docker_build/
