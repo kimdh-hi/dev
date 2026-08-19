@@ -73,6 +73,21 @@ BGP (Border Gateway Protocol)
 - NHN Cloud CDN, Naver Cloud CDN+ ...
 - ...
 
+## 비용
+
+### CloudFront 비용
+- https://aws.amazon.com/ko/cloudfront/pricing/pay-as-you-go/
+- 종량제, 정액제 플랜
+  - 배포 단위로 설정 가능
+- 종량제
+  - free tire: 계정당 매월 free tire 제공
+    - 월 1TB 인터넷 전송량, HTTP 요청 1000만건, cloudFront function 호출 200만건 
+  - 인터넷으로 나가는 전송량, HTTP 요청 횟수 등에 따른 추과 과금
+- 정액제
+  - CDN, WAF, Route53, S3, TLS 인증서 등등을 월 정액에 묶은 모델
+  - 허용량 초과시 추가요금x, 단 지속되는 경우 플랜 상향 조정 요구
+
+
 ## reference
 - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HowCloudFrontWorks.html
 - https://www.cloudflare.com/learning/security/glossary/what-is-bgp/
