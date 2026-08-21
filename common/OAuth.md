@@ -105,6 +105,103 @@ code_challenge = base64url(SHA256(code_verifier))
 - authorization code 에 매핑된 code_challenge, code_challenge_method 통해 code_verifier 해시 및 accessToken 발급 요청 내 code_verifier 와 값 비교
 - 일칳는 경우 accessToken 발급
 
+## OIDC (OpenID Connect)
+
+- OIDC 1.0 은 OAuth 2.0 위에 올라가는 인증 (Authentication) 계층
+    - OAuth2.0 기반 인증기능과 End-User에 대한 정보 전달을 위한 Claim 사용을 정의
+- OAuth2.0은 서드파이 앱이 accessToken 을 통해 리소스에 접근할 권한이 있는지를 검증하기 위한 표준
+- client는 인가 요청시 scope 에 `openid` 를 포함시켜 확장
+- 응답으로 JWT 포맷의 ID token을 응답
+
+### OIDC 스펙이 정의하는 것
+
+1. ID Token : 인증 이벤트에 대한 클레임을 담은, JWS 서명된 JWT
+2. UserInfo EP : Access Token으로 조회하는 표준 사용자 정보 엔드포인트
+3. 표준 Claim : sub/name/email/picture 등 (Core §5.1)
+4. openid scope : 확장을 요청 scope
+5. nonce : ID Token replay 방어
+
+### 관련 용어
+
+- OpenId Provider(OP): OpenID Connect를 구현한 OAuth 2.0 인증서버
+- Relying Party(RP): OAuth 2.0 클라이언트
+- End-User: 실제 인증되는 사용자 (=resource owner)
+- ID Token: 인증 결과 claim 을 포함하는 JWT
+- Token Endpoint: Authorization Code 를 ID Token, AccessToken/RefreshToken 으로 교환
+- UserInfo Endpoint: accessToken 통해 리소스 서버로부터 end-user 의 정보를 응답
+- jwks_uri: Id Token 서명 검증용 공개키 배포 (jwks_uri)
+
+### 인증 플로우
+
+#### AuthorizationCodeFlow (response_type=code)
+
+- client가 브라우저를 Authorization endpoint 로 리다이렉트
+- 인증서버(OP) 가 End-User 인증 및 동의 획득
+- redirect-uri 로 code 반환
+- client 가 Token Endpoint 로 code, 클라이언트 인증정보 전송
+- OP 가 ID Token, AccessToken(RefreshToken) 응답
+
+```kotlin
+TokenEndpoint 요청시
+
+//client_secret_basic
+//헤더방식 권장 (https://www.rfc-editor.org/info/rfc6749/#section-2.3.1)
+//Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+//basic => base64(client_id:client_secret)
+POST /token HTTP/1.1
+Host: server.example.com
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+
+grant_type=authorization_code
+&code=SplxlOBeZQQYbYS6WxSbIA
+&redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+
+//client_secret_post
+//client_secret 본문에 넣는것 허용
+grant_type=authorization_code&code=...&redirect_uri=...
+&client_id=s6BhdRkqt3&client_secret=7Fjfp0ZBr1KtDRbnfVdmIw
+```
+
+### 서명 검증
+
+- 인가 서버는 ID Token 을 자신이 개인키로 서명
+- RP(Client)는 OP의 공개키로 서명 검증
+    - 공개키는 인가서버가 공개하는 `jwks_uri` 로부터 획득
+- code 통해 ID Token 획득 요청시 TLS (HTTPS) 기반 요청인 경우 이미 인가서버가 준 응답임을 보장함으로 굳이 공개키로 다시 검증할 필요 없음
+- https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
+
+### ODIC 장점
+
+- 사용자 정보 조회 응답 표준화
+    - OAuth 2.0 통해 accessToken 획득 이후 userInfo endpoint로 사용자 정보를 얻어오는 경우 해당 스펙이 다름 (요청 url, 응답 스키마 모두 다름)
+    - OIDC 는 OIDC 의 클레임을 표준으로 정의하므로 표준화 가능
+    - userinfo endpoint 를 통해 표준화
+- 검증 가능
+    - aud, nonce, exp, 서명 등을 통해 자체 검증 가능
+- accessToken 발행시 id token 을 동봉하는 경우 api 호출횟수 감소
+    - id token 동봉 여부는 OP 재량
+    - id token 동봉되는 경우 userinfo endpoint 호출 또는 oidc가 아닌 경우 user 정보 조회 api 호출 1회 감소 가능
+
+### ODIC 표준 클레임
+
+- 필수: `iss`, `sub`, `aud`, `exp`, **`iat`**
+
+```kotlin
+{
+  "iss": "https://accounts.google.com",   
+  "sub": "1234567890",                    
+  "aud": "my-client-id",                  
+  "exp": 1311281970,                      
+  "iat": 1311280970,
+  
+  "email": "user@example.com",            
+  "email_verified": true,                 
+  "name": "Jane Doe",                     
+  "picture": "https://..."                
+}
+```
+
 ## reference
 
 - https://datatracker.ietf.org/doc/html/rfc6749
