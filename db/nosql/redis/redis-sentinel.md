@@ -1,5 +1,18 @@
 # Redis Sentinel
 
+```
+정리
+
+1. sentinel 은 master-replica 구조에서 master 장애시 replica 를 master 로 자동 승격시켜 HA 제공
+2. sentinel 프로세스는 redis 의 특별한 실행모드로 redis와 동일한 서버에서 실행될수도 있고 관계없는 서버에서 실행 될 수 있음
+3. 모든 sentinel 프로세스는 자기가 아는 모든 대상(master, replica, 다른 sentinel) 과 주기적으로 통신
+- PING: 마스터, 레플리카, 다른 sentinel
+- SENTINEL is-master-down-by-addr: 다른 sentinel
+- PUBLISH __sentinel__:hello    : master, replica (상호발견)
+4. 처음 sentinel 프로세스 구동시 마스터 노드 정보만 설정하면 그 이후부터는 각 sentinel 간 통신을 통해
+   마스터 변경시에도 동일한 변경된 마스터를 바라봄
+```
+
 ## Redis Sentinel
 
 - Redis 는 자체적으로 replication 기능을 제공하여 master + replica N대 구성 가능
