@@ -71,4 +71,22 @@ global
 usermod -aG haproxy <deployuser>
 ```
 
+## haproxy canary deploy
+- canary?
+  - blue/green 과 동일하게 두 종류의 환경을 두고 트래픽을 전환하지만 새 버전으로 트래픽을 점진적으로 전환하는 것이 blue/green 과의 차이
+- haproxy 는 backend 설정시 각 서버마다 weight 설정을 통해 트래픽 비율을 조절할 수 있음
+
+```
+backend be_app
+    balance roundrobin
+    option httpchk
+    http-check send meth GET uri /health
+    http-check expect status 200
+    default-server check inter 2s fall 3 rise 2
+
+    server blue1  127.0.0.1:8081 weight 100
+    server blue2  127.0.0.1:8082 weight 100
+    server green1 127.0.0.1:9081 weight 0     
+    server green2 127.0.0.1:9082 weight 0
+```
 
