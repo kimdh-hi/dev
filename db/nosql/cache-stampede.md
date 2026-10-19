@@ -12,6 +12,17 @@
 
 ## stampede 해결 방안
 
+### Single Flight
+
+- `product:1` 이라는 key 로 n개 요청이 동시에 몰리는 경우 가장 먼저 들어온 요청 1개만 필요한 조회 로직을 수행
+- 나머지 요청은 앞선 조회로직이 반환 될 때 캐시도, db도 조회하지 않고 해당 응답을 그대로 사용
+- 캐시 적재는 조회 로직을 수행한 가장 먼저 들어온 요청이 수행
+- 명시적으로 락을 잡고 조회 로직에 들어가는 경우 db조회는 최적화하지만 캐시 조회는 최소한 n-1 번 발생됨, single flight 방식의 경우 miss 시 캐시 조회 0건
+- spring 진영에서는 `@Cacheable(sync = true)` 통해 single flight 유사 기능 제공
+    - Synchronized Caching
+    - provider 마다 다르지만 대기 요청은 캐시에 값이 채워지는 것을 기다렸다가 캐시로부터 값을 조회해서 사용 (spring data redis)
+    - https://docs.spring.io/spring-framework/reference/integration/cache/annotations.html#cache-annotations-cacheable-synchronized
+
 ### TTL 랜덤화 (TTL jitter)
 
 - redis 는 ttl 만료시 key 를 바로 삭제하지 않는다.
