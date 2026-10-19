@@ -23,6 +23,28 @@
     - provider 마다 다르지만 대기 요청은 캐시에 값이 채워지는 것을 기다렸다가 캐시로부터 값을 조회해서 사용 (spring data redis)
     - https://docs.spring.io/spring-framework/reference/integration/cache/annotations.html#cache-annotations-cacheable-synchronized
 
+### SWR (stale-while-revalidate)
+
+- 캐시 만료시 바로 버리지 않고, 특정 시간동안 기존 값을 그대로 응답(stale)하면서, 뒤에서 새 값으로 갱신(revalidate)
+- `product:1` ttl 10분인 경우
+    - 핫키인 경우 10분마다 db로 큰 부하, 응답지연 발생 가능
+- stale 5분 설정
+    - ttl 10분이 요구되는 경우 실제 ttl은 stale 시간 포함 15분으로 설정
+    - 히트시 ttl 10분 경과된 경우 백그라운드에서 db 통해 캐시 갱신 (10~15분 사이 캐시 히트 요청이 있어야 함)
+    - 갱신하는 동안에 요청이 들어온 경우 stale 시간동안은 기존 값 그대로 응답(hit)
+    - 갱신된 경우 최신 값으로 새롭게 ttl 10분 stale 5분으로 시작
+- ttl 을 15분으로 설정하는 것과 무엇이 다르고 왜 사용해야 하는가?
+    - db 조회로직 자체가 매우 느린 경우 miss 이후 캐시 갱신을 위한 조회 자체가 오래 걸리므로 stampede 이슈로 인한 db, 외부 i/o 등 과도한 부하 발생 가능
+    - 단순히 ttl 을 15분으로 설정하는 경우 15분 이후 요청 몰릴 때 동기적으로 부하가 걸리는 조회로직 수행 이후 캐시 갱신 및 응답이 되므로 지연 및 부하 발생
+    - stale 시간 동안 백그라운드에서 캐시를 갱신하므로 부하 및 client 응답 지연 최소화
+- redis 에서 swr 을 직접 제공하지 않으므로 애플리케이션 수준에서 구현 필요
+    - ttl + stale 만큼 ttl 설정
+    - 값에는 실제 언제부터 stale 로 판단할지에 대한 값을 같이 저장
+    - 캐시 히트시마다 stale 여부 확인하여 stale 로 판단되는 겨우 백그라운드에서 캐시 갱신 진행
+- 적용 검토
+    - 해당 key 로 요청이 몰리는 경우
+    - 캐시에 적재할 조회 로직이 무거운 경우
+
 ### TTL 랜덤화 (TTL jitter)
 
 - redis 는 ttl 만료시 key 를 바로 삭제하지 않는다.
