@@ -67,6 +67,32 @@
 6. 응답 반환, 작업 종료 이후 unmount
 ```
 
+## Daemon thread
+
+- https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html
+- https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.virtual-threads
+- 가상 스레드는 항상 데몬 스레드이다.
+    - 데몬 스레드가 살아서 작업중일 때 JVM 종료시 종료를 막지 못한다.
+    - 논데몬 스레드가 모두 종료되면 JVM 종료 절차가 시작된다.
+- 데몬 스레드
+    - JVM 종료를 막지 않는 스레드
+    - java 스레드는 데몬 스레드와 논데몬 스레드로 나뉘며, JVM 종료 시점에 영향을 주는지 차이
+    - 데몬 스레드는 JVM 종료시 데몬 스레드 작업중 여부와 관계없이 종료됨
+    - 모든 논데몬 스레드의 작업이 종료된 경우 JVM 종료 절차가 진행됨
+    - JVM 시작이 일반적으로 main 스레드가 있으며 main 스레드는 논데몬 스레드
+    - 논데몬 스레드로부터 기본적을 생성되는 스레드는 논데몬 스레드
+    - 생성 이후 스레드 시작 전 `setDaemon(true)` 통해 데몬 스레드 지정
+- spring main 스레드는 컨텍스트를 만들고 빈을 초기화하는 등의 작업을 완료하면 종료된다.
+    - 논데몬 스레드인 main 스레드가 작업을 마쳐도 내장 tomcat 사용시 JVM 유지용도로 논데몬 스레드가 계속해서 살아 있음
+- 만약, 내장톰캣을 사용하지 않으면서 @Scheduled 만 사용하는 경우  작업 대기하면서 살아있는 스케줄러 스레드가 JVM 을 유지시킬 수 있음
+- 위 경우 virtual thread 를 키게 되면 가상 스레드(데몬 스레드)가 대기하므로 JVM 이 종료될 수 있음
+    - `spring.main.keep-alive=true` 설정 통해 내장톰켓 없는 서버에서도 JVM 유지 가능
+- `spring.main.keep-alive=true`
+    - 애플리케이션이 실행중인 동안 JVM 이 종료되지 않도록 유지하는 용도의 논데몬 스레드를 하나 띄운다.
+- 공식문서상 virtual thread 를 사용하는 모든 경우에 `spring.main.keep-alive` true 설정을 권장한다.
+    - https://github.com/spring-projects/spring-boot/issues/37736
+    - `spring.main.keep-alive` 을 자동으로 켜자는 논의가 있었으나 반려됨 이슈
+
 ## reference
 
 - https://docs.spring.io/spring-boot/appendix/application-properties/index.html
